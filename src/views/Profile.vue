@@ -1,0 +1,128 @@
+<template>
+  <div class="profile-container">
+    <el-card class="user-card" shadow="hover">
+      <div class="user-info">
+        <el-avatar :size="80" src="https://picsum.photos/200/200" />
+        <div class="user-text">
+          <h2>{{ user }}</h2>
+          <p>儿童绘本创作者 / 读者</p>
+          <div style="display: flex; gap: 6px; margin-top: 4px">
+            <el-tag type="success" size="small">已实名认证</el-tag>
+            <el-tag size="small" type="warning" v-if="!isVip">普通用户</el-tag>
+            <el-tag size="small" type="success" v-else>👑 会员用户</el-tag>
+          </div>
+
+          <el-button
+            type="warning"
+            size="small"
+            style="margin-top: 10px"
+            v-if="!isVip"
+            @click="handleOpenVip"
+          >
+            开通会员 · 无限创作 + 全本阅读
+          </el-button>
+        </div>
+      </div>
+    </el-card>
+
+    <el-card v-if="!isVip" style="margin-bottom:20px;">
+      <h4 style="margin:0 0 8px 0;">🌟 会员专属权益</h4>
+      <div>• 无限次 AI 绘本创作</div>
+      <div>• 全站绘本自由阅读，无试读限制</div>
+      <div>• 会员专属精美绘本资源</div>
+      <div>• 内容优先审核</div>
+    </el-card>
+
+    <el-card class="income-card" style="margin-bottom:20px;">
+      <h3 style="margin:0 0 10px 0;">💰 作者收益中心</h3>
+      <div style="font-size:18px; font-weight:bold;">
+        累计收益：¥{{ income.total.toFixed(2) }}
+      </div>
+      <div style="margin-top:8px; font-size:14px; color:#666;">
+        <div>会员订阅分成：¥{{ income.vipShare.toFixed(2) }}</div>
+        <div>绘本阅读奖励：¥{{ income.readReward.toFixed(2) }}</div>
+      </div>
+    </el-card>
+
+    <div class="menu-grid">
+      <el-card class="menu-item" @click="activeTab = 1">
+        <div class="icon">📖</div><span>阅读历史</span>
+      </el-card>
+      <el-card class="menu-item" @click="activeTab = 2">
+        <div class="icon">✏️</div><span>我的创作</span>
+      </el-card>
+      <el-card class="menu-item" @click="activeTab = 3">
+        <div class="icon">⭐</div><span>我的收藏</span>
+      </el-card>
+      <el-card class="menu-item" @click="activeTab = 4">
+        <div class="icon">⚙️</div><span>账号设置</span>
+      </el-card>
+    </div>
+
+    <el-card class="content-card">
+      <div v-if="activeTab === 1"><h3>阅读历史</h3><el-empty description="暂无记录" /></div>
+      <div v-if="activeTab === 2"><h3>我的创作</h3><el-empty description="暂无作品" /></div>
+      <div v-if="activeTab === 3"><h3>我的收藏</h3><el-empty description="暂无收藏" /></div>
+      <div v-if="activeTab === 4">
+        <h3>账号设置</h3>
+        <el-form label-width="100px">
+          <el-form-item label="昵称"><el-input v-model="form.name" /></el-form-item>
+          <el-form-item label="家长管控"><el-switch v-model="form.parentControl" /></el-form-item>
+          <el-form-item>
+            <el-button type="primary">保存</el-button>
+            <el-button type="danger" @click="logout">退出登录</el-button>
+          </el-form-item>
+        </el-form>
+      </div>
+    </el-card>
+  </div>
+</template>
+
+<script setup>
+import { ref, onMounted } from 'vue'
+import { ElMessage } from 'element-plus'
+import { useRouter } from 'vue-router'
+import { openVip } from '../utils/permission.js'
+import { getAuthorIncome, onUserBecomeVip } from '../utils/authorIncome.js'
+
+const router = useRouter()
+const activeTab = ref(1)
+const user = ref('')
+const isVip = ref(false)
+const form = ref({ name: '', parentControl: true })
+const income = ref({ total: 0, vipShare: 0, readReward: 0 })
+
+onMounted(() => {
+  const u = localStorage.getItem('user')
+  if (!u) { router.push('/login'); return }
+  user.value = u
+  form.value.name = u
+  isVip.value = localStorage.getItem('isVip') === 'true'
+  income.value = getAuthorIncome()
+})
+
+const logout = () => {
+  localStorage.removeItem('user')
+  ElMessage.success('退出成功')
+  router.push('/login')
+}
+
+const handleOpenVip = () => {
+  openVip()
+  isVip.value = true
+  onUserBecomeVip()
+  income.value = getAuthorIncome()
+  ElMessage.success('已开通会员！享无限创作 + 全本阅读')
+}
+</script>
+
+<style scoped>
+.profile-container { max-width:900px; margin:0 auto; padding:20px; }
+.user-card { margin-bottom:20px; border-radius:12px; }
+.user-info { display:flex; align-items:center; gap:20px; }
+.menu-grid { display:grid; grid-template-columns:repeat(4,1fr); gap:12px; margin-bottom:20px; }
+.menu-item { text-align:center; padding:16px; cursor:pointer; border-radius:10px; }
+.icon { font-size:28px; margin-bottom:6px; }
+.content-card { border-radius:12px; min-height:300px; }
+.income-card { padding:16px; border-radius:12px; }
+</style>
