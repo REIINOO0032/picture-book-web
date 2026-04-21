@@ -109,16 +109,22 @@ const submit = () => {
   display: flex;
   align-items: center;
   justify-content: center;
-  background: #f5f9ff;
+  /* 统一页面背景 */
+  background: var(--bg-page);
 }
 .login-card {
   width: 420px;
   border-radius: 12px;
   padding: 30px;
+  /* 统一卡片样式 */
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  box-shadow: 0 1px 4px rgba(0,0,0,0.05);
 }
 .title {
   text-align: center;
   margin: 0;
-  color: #2d5af1;
+  /* 统一文字颜色 */
+  color: var(--text-dark);
 }
 </style>

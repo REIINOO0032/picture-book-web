@@ -72,13 +72,16 @@ const goRead = (bookId) => {
   cursor: pointer;
   border-radius: 12px;
   overflow: hidden;
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.08);
+  /* 统一卡片背景 + 边框 */
+  background: #ffffff;
+  border: 1px solid var(--border);
   transition: 0.2s;
   padding: 10px;
 }
 
 .book-item:hover {
   transform: translateY(-4px);
+  border-color: var(--primary);
 }
 
 .book-cover {
@@ -93,5 +96,7 @@ const goRead = (bookId) => {
   font-weight: bold;
   font-size: 15px;
   text-align: center;
+  /* 统一文字颜色 */
+  color: var(--text-dark);
 }
 </style>

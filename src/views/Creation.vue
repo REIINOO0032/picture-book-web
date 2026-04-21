@@ -1,183 +1,128 @@
 <template>
-  <div class="creation-page" style="padding: 20px; max-width: 900px; margin: 0 auto">
-    <h2 style="text-align: center; margin-bottom: 20px">✏️ AI 儿童绘本创作</h2>
+  <div class="creator-page">
+    <h2>📖 绘本创作者中心</h2>
 
-    <el-card style="margin-bottom: 15px">
-      <div style="display: flex; justify-content: space-between; align-items: center">
-        <div>
-          <span v-if="userInfo.isVip">👑 会员用户</span>
-          <span v-else>普通用户（每日免费 3 次）</span>
-          <div style="margin-top: 5px">今日剩余次数：{{ userInfo.leftCount }}</div>
-        </div>
-        <el-button type="warning" v-if="!userInfo.isVip" @click="handleOpenVip">
-          开通会员
-        </el-button>
+    <div class="card">
+      <h3>✨ 使用大模型生成绘本</h3>
+      <input v-model="title" placeholder="请输入绘本标题" />
+      <input v-model="topic" placeholder="请输入主题，例如：小红帽剧情" />
+      <button @click="handleGenerate" :disabled="loading">
+        {{ loading ? "生成中..." : "🚀 让AI生成故事" }}
+      </button>
+    </div>
+
+    <div v-if="storyContent" class="card">
+      <h3>✏️ 生成结果（可编辑）</h3>
+      <textarea v-model="storyContent" rows="8"></textarea>
+      <div class="btns">
+        <button @click="handleSaveDraft">💾 保存草稿</button>
+        <button @click="handleSubmitReview">✅ 提交审核</button>
       </div>
-    </el-card>
+    </div>
 
-    <el-card shadow="hover" style="margin-bottom: 20px">
-      <el-form label-width="100px">
-        <el-form-item label="故事内容">
-          <el-input
-            v-model="storyText"
-            type="textarea"
-            :rows="6"
-            placeholder="请输入适合幼儿的故事内容..."
-          />
-        </el-form-item>
-
-        <el-form-item label="关键词" v-if="keywords.length > 0">
-          <el-tag
-            v-for="(kw, idx) in keywords"
-            :key="idx"
-            type="primary"
-            style="margin-right: 6px"
-          >{{ kw }}</el-tag>
-        </el-form-item>
-
-        <el-form-item label="绘本风格">
-          <el-select v-model="style" style="width: 100%">
-            <el-option label="卡通风" value="cartoon" />
-            <el-option label="水彩风" value="watercolor" />
-            <el-option label="简笔画风" value="simple" />
-            <el-option label="童话风" value="fairytale" />
-          </el-select>
-        </el-form-item>
-
-        <el-form-item label="适用年龄">
-          <el-select v-model="age" style="width: 100%">
-            <el-option label="3-6岁" value="3-6" />
-            <el-option label="7-10岁" value="7-10" />
-          </el-select>
-        </el-form-item>
-
-        <el-form-item>
-          <el-button
-            type="primary"
-            block
-            :loading="generating"
-            @click="generateStory"
-          >
-            {{ generating ? '生成中...' : '🚀 开始生成绘本' }}
-          </el-button>
-        </el-form-item>
-      </el-form>
-    </el-card>
-
-    <el-card v-if="book.pages.length > 0" title="📖 绘本预览" shadow="hover">
-      <div style="margin-bottom: 10px">
-        审核状态：
-        <el-tag v-if="auditStatus === 'pending'" type="warning">待审核</el-tag>
-        <el-tag v-else-if="auditStatus === 'pass'" type="success">已通过（适合幼儿）</el-tag>
-        <el-tag v-else type="danger">已驳回（内容不适宜）</el-tag>
-      </div>
-
-      <div style="text-align: center">
-        <img
-          :src="book.pages[currentPage].image"
-          style="max-width: 100%; border-radius: 8px"
-          alt="绘本页"
-        />
-        <div style="margin-top: 10px; font-size: 16px; line-height: 1.6">
-          {{ book.pages[currentPage].text }}
+    <div class="card">
+      <h3>📋 我的作品</h3>
+      <div v-for="item in myList" :key="item.id" class="item">
+        <div>{{ item.title }}</div>
+        <div>状态：
+          <span v-if="item.status === 'draft'">草稿</span>
+          <span v-if="item.status === 'pending'">审核中</span>
+          <span v-if="item.status === 'pass'">已发布</span>
         </div>
       </div>
-
-      <div style="text-align: center; margin-top: 15px">
-        <el-button @click="currentPage--" :disabled="currentPage === 0">上一页</el-button>
-        <span style="margin: 0 10px">第 {{ currentPage + 1 }} / {{ book.pages.length }} 页</span>
-        <el-button @click="currentPage++" :disabled="currentPage === book.pages.length - 1">下一页</el-button>
-      </div>
-    </el-card>
+    </div>
   </div>
 </template>
 
 <script setup>
-import { ref, onMounted, watch } from 'vue'
-import { ElMessage } from 'element-plus'
-import {
-  checkContent,
-  getUserInfo,
-  addGenerateCount,
-  openVip
-} from '../utils/permission'
+import { ref, onMounted } from 'vue'
+import { generateStory, saveDraft, submitReview, getMyStories } from '@/api'
 
-const storyText = ref('')
-const style = ref('cartoon')
-const age = ref('3-6')
-const generating = ref(false)
-const currentPage = ref(0)
-const book = ref({ pages: [] })
-const keywords = ref([])
-const userInfo = ref({})
-const auditStatus = ref('')
+// 从本地存储读取【用户登录时输入的用户名】
+const user = ref(JSON.parse(localStorage.getItem('user') || '{}'))
+const title = ref('')
+const topic = ref('')
+const storyContent = ref('')
+const loading = ref(false)
+const myList = ref([])
+
+// AI 生成故事（真正调用 LLM）
+async function handleGenerate() {
+  if (!topic.value) {
+    alert("请输入故事主题")
+    return
+  }
+  loading.value = true
+  storyContent.value = ""
+  try {
+    const res = await generateStory(topic.value)
+    storyContent.value = res.data.content
+  } catch (err) {
+    alert("生成失败，请确保后端已启动")
+    console.error(err)
+  } finally {
+    loading.value = false
+  }
+}
+
+// 保存草稿
+async function handleSaveDraft() {
+  if (!user.value.username) {
+    alert("请先登录")
+    return
+  }
+  await saveDraft({
+    title: title.value,
+    content: storyContent.value,
+    author: user.value.username
+  })
+  alert("保存草稿成功")
+  getMyListData()
+}
+
+// 提交审核
+async function handleSubmitReview() {
+  if (!user.value.username) {
+    alert("请先登录")
+    return
+  }
+  await saveDraft({
+    title: title.value,
+    content: storyContent.value,
+    author: user.value.username
+  })
+  const res = await getMyStories(user.value.username)
+  const latest = res.data.at(-1)
+  await submitReview({ id: latest.id })
+  alert("提交审核成功")
+  getMyListData()
+}
+
+// 获取我的作品
+async function getMyListData() {
+  if (!user.value.username) return
+  const res = await getMyStories(user.value.username)
+  myList.value = res.data
+}
 
 onMounted(() => {
-  userInfo.value = getUserInfo()
+  getMyListData()
 })
-
-watch(storyText, (val) => {
-  if (!val || val.length < 10) {
-    keywords.value = []
-    return
-  }
-  const stopWords = ['的', '了', '在', '是', '和', '有', '我', '你', '他']
-  let arr = val
-    .split(/[，。！？；\s]/)
-    .filter((w) => w.length >= 2 && !stopWords.includes(w))
-  keywords.value = [...new Set(arr)].slice(0, 6)
-})
-
-const handleOpenVip = () => {
-  openVip()
-  userInfo.value = getUserInfo()
-  ElMessage.success('已开通会员，无限创作')
-}
-
-const generateStory = () => {
-  const ui = getUserInfo()
-  if (ui.leftCount <= 0) {
-    ElMessage.warning('今日次数已用完，可开通会员')
-    return
-  }
-  if (!storyText.value.trim()) {
-    ElMessage.warning('请输入故事内容')
-    return
-  }
-
-  const check = checkContent(storyText.value)
-  if (!check.pass) {
-    auditStatus.value = 'reject'
-    ElMessage.error(`内容违规：包含“${check.word}”，不适宜幼儿`)
-    return
-  }
-
-  generating.value = true
-  auditStatus.value = 'pending'
-
-  setTimeout(() => {
-    book.value = {
-      title: 'AI 绘本',
-      pages: [
-        {
-          image: 'https://picsum.photos/600/400?random=1',
-          text: storyText.value.slice(0, 30) + '...'
-        },
-        {
-          image: 'https://picsum.photos/600/400?random=2',
-          text: '故事继续，温馨有趣的情节。'
-        },
-        {
-          image: 'https://picsum.photos/600/400?random=3',
-          text: '故事结尾，适合小朋友的正能量结局。'
-        }
-      ]
-    }
-    auditStatus.value = 'pass'
-    addGenerateCount()
-    userInfo.value = getUserInfo()
-    generating.value = false
-    ElMessage.success('绘本生成完成，内容已通过审核')
-  }, 1500)
-}
 </script>
+
+<style scoped>
+.creator-page {
+  max-width: 800px;
+  margin: 0 auto;
+  padding: 20px;
+}
+.btns {
+  display: flex;
+  gap: 10px;
+  margin-top: 12px;
+}
+.item {
+  padding: 10px 0;
+  border-bottom: 1px solid var(--border-color);
+}
+</style>

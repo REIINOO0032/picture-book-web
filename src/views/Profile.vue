@@ -12,25 +12,18 @@
             <el-tag size="small" type="success" v-else>👑 会员用户</el-tag>
           </div>
 
+          <!-- 正确：跳转到会员权益页面 -->
           <el-button
             type="warning"
             size="small"
             style="margin-top: 10px"
             v-if="!isVip"
-            @click="handleOpenVip"
+            @click="$router.push('/vip')"
           >
             开通会员 · 无限创作 + 全本阅读
           </el-button>
         </div>
       </div>
-    </el-card>
-
-    <el-card v-if="!isVip" style="margin-bottom:20px;">
-      <h4 style="margin:0 0 8px 0;">🌟 会员专属权益</h4>
-      <div>• 无限次 AI 绘本创作</div>
-      <div>• 全站绘本自由阅读，无试读限制</div>
-      <div>• 会员专属精美绘本资源</div>
-      <div>• 内容优先审核</div>
     </el-card>
 
     <el-card class="income-card" style="margin-bottom:20px;">
@@ -82,8 +75,8 @@
 import { ref, onMounted } from 'vue'
 import { ElMessage } from 'element-plus'
 import { useRouter } from 'vue-router'
-import { openVip } from '../utils/permission.js'
-import { getAuthorIncome, onUserBecomeVip } from '../utils/authorIncome.js'
+import { getUserInfo } from '../api'
+import { getAuthorIncome } from '../utils/authorIncome.js'
 
 const router = useRouter()
 const activeTab = ref(1)
@@ -92,12 +85,19 @@ const isVip = ref(false)
 const form = ref({ name: '', parentControl: true })
 const income = ref({ total: 0, vipShare: 0, readReward: 0 })
 
-onMounted(() => {
+onMounted(async () => {
   const u = localStorage.getItem('user')
-  if (!u) { router.push('/login'); return }
+  if (!u) {
+    router.push('/login')
+    return
+  }
   user.value = u
   form.value.name = u
-  isVip.value = localStorage.getItem('isVip') === 'true'
+
+  // 从数据库获取真实会员状态
+  const res = await getUserInfo(u)
+  isVip.value = res.data.isVip
+
   income.value = getAuthorIncome()
 })
 
@@ -106,23 +106,61 @@ const logout = () => {
   ElMessage.success('退出成功')
   router.push('/login')
 }
-
-const handleOpenVip = () => {
-  openVip()
-  isVip.value = true
-  onUserBecomeVip()
-  income.value = getAuthorIncome()
-  ElMessage.success('已开通会员！享无限创作 + 全本阅读')
-}
 </script>
 
 <style scoped>
-.profile-container { max-width:900px; margin:0 auto; padding:20px; }
-.user-card { margin-bottom:20px; border-radius:12px; }
-.user-info { display:flex; align-items:center; gap:20px; }
-.menu-grid { display:grid; grid-template-columns:repeat(4,1fr); gap:12px; margin-bottom:20px; }
-.menu-item { text-align:center; padding:16px; cursor:pointer; border-radius:10px; }
-.icon { font-size:28px; margin-bottom:6px; }
-.content-card { border-radius:12px; min-height:300px; }
-.income-card { padding:16px; border-radius:12px; }
+.profile-container {
+  max-width: 900px;
+  margin: 0 auto;
+  padding: 20px;
+}
+.user-card {
+  margin-bottom: 20px;
+  border-radius: 12px;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  padding: 20px;
+}
+.user-info {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+}
+.menu-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 12px;
+  margin-bottom: 20px;
+}
+.menu-item {
+  text-align: center;
+  padding: 16px;
+  cursor: pointer;
+  border-radius: 10px;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  transition: 0.2s;
+}
+.menu-item:hover {
+  border-color: var(--primary);
+  background: #faf8f5;
+}
+.icon {
+  font-size: 28px;
+  margin-bottom: 6px;
+  color: var(--primary);
+}
+.content-card {
+  border-radius: 12px;
+  min-height: 300px;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  padding: 20px;
+}
+.income-card {
+  padding: 16px;
+  border-radius: 12px;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+}
 </style>
