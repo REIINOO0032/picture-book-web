@@ -5,6 +5,9 @@ import Profile from '../views/Profile.vue'
 import Search from '../views/Search.vue'
 import Creation from '../views/Creation.vue'
 import BookRead from '../views/BookRead.vue'
+import VipPage from '../views/VipPage.vue'
+import EditBook from '../views/EditBook.vue'   
+//import DraftBox from '../views/DraftBox.vue'
 
 const routes = [
   { path: '/', name: 'Home', component: Home },
@@ -12,7 +15,10 @@ const routes = [
   { path: '/profile', name: 'Profile', component: Profile },
   { path: '/search', name: 'Search', component: Search },
   { path: '/creation', name: 'Creation', component: Creation },
-  { path: '/read/:id', name: 'BookRead', component: BookRead }
+  { path: '/read/:id', name: 'BookRead', component: BookRead },
+  { path: '/vip', name: 'VipPage', component: VipPage },
+  { path: '/edit/:id', name: 'EditBook', component: EditBook } // 加了 :id
+  //{ path: '/draft', name: 'DraftBox', component: DraftBox }
 ]
 
 const router = createRouter({

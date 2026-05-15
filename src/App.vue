@@ -1,33 +1,5 @@
 <template>
-  <div class="app-container">
-    <!-- 页面内容 -->
-    <div class="main-content">
-      <router-view />
-    </div>
-
-    <!-- 底部导航栏 -->
-    <div class="bottom-nav">
-      <div class="nav-item" :class="{ active: route.path === '/' }" @click="go('/')">
-        <div class="icon">🏠</div>
-        <span>首页</span>
-      </div>
-
-      <div class="nav-item" :class="{ active: route.path === '/search' }" @click="go('/search')">
-        <div class="icon">🔍</div>
-        <span>搜索</span>
-      </div>
-
-      <div class="nav-item" :class="{ active: route.path === '/creation' }" @click="go('/creation')">
-        <div class="icon">✏️</div>
-        <span>创作</span>
-      </div>
-
-      <div class="nav-item" :class="{ active: route.path === '/profile' }" @click="go('/profile')">
-        <div class="icon">👤</div>
-        <span>我的</span>
-      </div>
-    </div>
-  </div>
+  <router-view />
 </template>
 
 <script setup>
